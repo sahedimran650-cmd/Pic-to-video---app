@@ -7,14 +7,59 @@
 <title>Pic to Video PRO</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-body{font-family: system-ui; background:#0f0f0f; color:white}
-.glass{background:rgba(255,255,255,0.07); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.1)}
+body{font-family:system-ui;background:#0a0a0f;color:white}
+.glass{background:rgba(255,255,255,.07);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:24px}
+.btn{background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:16px}
 </style>
 </head>
 <body class="p-4">
 <div class="max-w-md mx-auto">
-<h1 class="text-3xl font-black text-center py-6">🎬 Pic to Video <span class="text-purple-400">PRO</span></h1>
+<h1 class="text-3xl font-black text-center mt-4">🎬 Pic to Video <span class="text-purple-400">PRO</span></h1>
+<p class="text-center text-gray-400 text-sm mt-1">2 ta pic diye HD video banao</p>
 
-<div class="glass rounded-3xl p-5 space-y-4">
-<label class="block font-bold">📸 Pic 1 (Surute dekhabe)</label>
-<input type="file" id="pic1" accept="image/*" class="w-full bg-black
+<div class="glass p-5 mt-6 space-y-4">
+<label class="block font-bold">📸 Pic 1 (First)</label>
+<input id="img1" type="file" accept="image/*" class="w-full bg-black p-3 rounded-xl">
+<label class="block font-bold">📸 Pic 2 (Last)</label>
+<input id="img2" type="file" accept="image/*" class="w-full bg-black p-3 rounded-xl">
+<label class="block font-bold">✍️ Text</label>
+<input id="txt" type="text" placeholder="My Love Story ❤️" class="w-full bg-black p-3 rounded-xl">
+<div class="flex justify-between"><span>Duration</span><span id="durVal">5s</span></div>
+<input id="dur" type="range" min="3" max="10" value="5" class="w-full"><canvas id="canvas" width="720" height="1280" class="w-full rounded-xl bg-black hidden"></canvas>
+<video id="preview" controls class="w-full rounded-xl bg-black hidden"></video>
+<button id="gen" class="btn w-full py-4 font-bold">✨ Generate Video</button>
+<a id="down" download="video.webm" class="hidden btn w-full py-4 font-bold text-center block">⬇️ Download Video</a>
+<p id="status" class="text-center text-purple-300 text-sm"></p>
+</div></div>
+
+<script>
+let i1=null,i2=null;
+img1.onchange=e=>{let r=new FileReader();r.onload=()=>i1=r.result;r.readAsDataURL(e.target.files[0])}
+img2.onchange=e=>{let r=new FileReader();r.onload=()=>i2=r.result;r.readAsDataURL(e.target.files[0])}
+dur.oninput=()=>durVal.textContent=dur.value+'s'
+gen.onclick=async()=>{
+if(!i1){alert('Pic 1 dao');return}
+status.textContent='0% Generating...';
+let cv=canvas,ctx=cv.getContext('2d');cv.classList.remove('hidden');
+let a=new Image();a.src=i1;await a.decode();
+let b=i2?new Image():null;if(b){b.src=i2;await b.decode()}
+let d=dur.value*1000,fps=30;
+let stream=cv.captureStream(fps);
+let rec=new MediaRecorder(stream,{mimeType:'video/webm;codecs=vp9'});
+let ch=[];rec.ondataavailable=e=>ch.push(e.data);
+rec.onstop=()=>{let blob=new Blob(ch,{type:'video/webm'});let u=URL.createObjectURL(blob);preview.src=u;preview.classList.remove('hidden');down.href=u;down.classList.remove('hidden');status.textContent='Ready! ✅';}
+rec.start();let st=performance.now();
+function draw(){
+let el=performance.now()-st;let p=Math.min(el/d,1);
+ctx.fillRect(0,0,720,1280);
+let sc=1+p*0.25;let im=(p<0.5||!b)?a:b;
+let w=720*sc,h=1280*sc;
+ctx.globalAlpha=1;ctx.drawImage(im,(720-w)/2,(1280-h)/2,w,h);
+let t=txt.value;if(t){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,1050,720,150);ctx.fillStyle='white';ctx.font='bold 44px system-ui';ctx.textAlign='center';ctx.fillText(t,360,1140);}
+status.textContent=Math.round(p*100)+'% Generating...';
+if(p<1)requestAnimationFrame(draw);else rec.stop();
+}draw();
+}
+</script>
+</body>
+</html>
